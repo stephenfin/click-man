@@ -16,7 +16,8 @@ import click
 
 from .man import ManPage
 
-def generate_man_page(ctx, version=None):
+
+def generate_man_page(ctx, version=None, date=None):
     """
     Generate documentation for the given command.
 
@@ -32,7 +33,14 @@ def generate_man_page(ctx, version=None):
     man_page.short_help = ctx.command.get_short_help_str()
     man_page.description = ctx.command.help
     man_page.synopsis = ' '.join(ctx.command.collect_usage_pieces(ctx))
-    man_page.options = [x.get_help_record(ctx) for x in ctx.command.params if isinstance(x, click.Option)]
+    man_page.options = [
+        x.get_help_record(ctx) for x in ctx.command.params
+        if isinstance(x, click.Option)
+    ]
+
+    if date:
+        man_page.date = date
+
     commands = getattr(ctx.command, 'commands', None)
     if commands:
         man_page.commands = [
@@ -42,7 +50,9 @@ def generate_man_page(ctx, version=None):
     return str(man_page)
 
 
-def write_man_pages(name, cli, parent_ctx=None, version=None, target_dir=None):
+def write_man_pages(
+    name, cli, parent_ctx=None, version=None, target_dir=None, date=None,
+):
     """
     Generate man page files recursively
     for the given click cli function.
@@ -52,6 +62,7 @@ def write_man_pages(name, cli, parent_ctx=None, version=None, target_dir=None):
     :param click.Context parent_ctx: the parent click context
     :param str target_dir: the directory where the generated
                            man pages are stored.
+    :param date: the date to include in the header
     """
     ctx = click.Context(cli, info_name=name, parent=parent_ctx)
 
@@ -70,4 +81,8 @@ def write_man_pages(name, cli, parent_ctx=None, version=None, target_dir=None):
             if command.hidden:
                 # Do not write a man page for a hidden command
                 continue
-        write_man_pages(name, command, parent_ctx=ctx, version=version, target_dir=target_dir)
+
+        write_man_pages(
+            name, command, parent_ctx=ctx, version=version,
+            target_dir=target_dir, date=date,
+        )
